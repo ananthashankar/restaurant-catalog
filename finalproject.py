@@ -33,7 +33,7 @@ from sqlalchemy.orm import sessionmaker
 
 from database_setup import Restaurant, Base, MenuItem, User
 from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
-engine = create_engine('sqlite:///restaurant.db')
+engine = create_engine('postgres://yedyhkgepifrza:hFzRkX6mR2ganOnOsel9h3c-1v@ec2-54-235-177-62.compute-1.amazonaws.com:5432/deo68tfekrlds2')
 Base.metadata.bind = engine
 DBSession = sessionmaker(bind=engine)
 session = DBSession()
@@ -612,7 +612,8 @@ def restaurantsSingleMenuXML(restaurant_id, menu_id):
     return render_template('restaurantSingleMenu.xml', item=item)
 
 
-if __name__ == '__main__':
-	app.secret_key = 'super_secret_key'
-	app.debug = True
-	app.run(host='0.0.0.0', port=5000)
+#if __name__ == '__main__':
+#app = Flask(__name__)
+app.secret_key = 'super_secret_key'
+app.debug = True
+#	app.run(host='0.0.0.0', port=5000)
