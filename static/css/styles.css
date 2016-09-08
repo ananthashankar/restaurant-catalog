@@ -32,7 +32,7 @@ h1, h2  { color: #CCCCCC; }
 h1, h2          { font-family: 'Georgia', serif; margin: 0; }
 h1              { border-bottom: 2px; margin-top: 20px;}
 h2            	{ text-align: center; }
-h3, h4			{ color: #FFFFCC; }
+h3, h4			{ color: #CCCCCC; }
 
 p               { color: #FFFFCC;}
 
