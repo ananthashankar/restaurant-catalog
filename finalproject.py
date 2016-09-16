@@ -22,21 +22,38 @@ import json
 import httplib2
 import requests
 
+
+# importing cloudinary for image uploading
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
+
+
 # importing oauth2client and supporting functionaities
 from oauth2client.client import flow_from_clientsecrets
 from oauth2client.client import FlowExchangeError
 
-# importing sqlalchemy and db to access
 
+# importing sqlalchemy and db to access
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from database_setup import Restaurant, Base, MenuItem, User
 from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
+
 engine = create_engine('postgres://yedyhkgepifrza:hFzRkX6mR2ganOnOsel9h3c-1v@ec2-54-235-177-62.compute-1.amazonaws.com:5432/deo68tfekrlds2')
 Base.metadata.bind = engine
 DBSession = sessionmaker(bind=engine)
 session = DBSession()
+
+
+# configuring cloudinary
+
+cloudinary.config( 
+  cloud_name = "hfqaof15i", 
+  api_key = "352736126685985", 
+  api_secret = "6ORA6ZCMbLTAM1vl6_wmfYbO5uA" 
+)
 
 CLIENT_ID = json.loads(open('client_secrets.json', 'r').read())['web']['client_id']
 
@@ -374,7 +391,9 @@ def createNewRestaurant():
 			path = ""
 			if upload_file(request) != None:
 				file = request.files['image']
-				path = os.path.join('/', app.config['UPLOAD_FOLDER'], secure_filename(file.filename))
+				res = cloudinary.uploader.upload(file)
+				path = res['url']
+
 			restaurant = Restaurant(name = request.form['name'], user_id=login_session['user_id'], \
 				picture=path)
 			session.add(restaurant)
@@ -406,9 +425,16 @@ def editRestaurant(restaurant_id):
 			restaurant.name = request.form['name']
 
 		if upload_file(request) != None:
+			oldPic = restaurant.picture
 			file = request.files['image']
-			path = os.path.join('/', app.config['UPLOAD_FOLDER'], secure_filename(file.filename))
+			res = cloudinary.uploader.upload(file)
+			path = res['url']
 			restaurant.picture = path
+
+		dic = oldPic.split('/')
+		imgName = dic[len(dic)-1]
+		pubId = imgName[0:len(imgName)-4]
+		cloudinary.uploader.destroy(pubId, invalidate = True)
 
 		session.add(restaurant)
 		session.commit()
@@ -428,6 +454,8 @@ def deleteRestaurant(restaurant_id):
 	#if 'username' not in login_session:
 	#	return redirect ('/login')
 	restaurant = session.query(Restaurant).get(restaurant_id)
+	oldPic = restaurant.picture
+
 	if restaurant.user_id != login_session['user_id']:
 		return "<script>function myFunction() {alert('You are not authorized to \
 			delete this restaurant. Please create your own restaurant in order to \
@@ -436,6 +464,10 @@ def deleteRestaurant(restaurant_id):
 	if request.method == 'POST':
 		session.query(Restaurant).filter_by(id=restaurant_id).delete(synchronize_session=False)
 		session.commit()
+		dic = oldPic.split('/')
+		imgName = dic[len(dic)-1]
+		pubId = imgName[0:len(imgName)-4]
+		cloudinary.uploader.destroy(pubId, invalidate = True)
 		flash("Restaurant Successfully Deleted!")
 		return redirect(url_for('allRestaurants'))
 
@@ -481,7 +513,8 @@ def createMenuItem(restaurant_id):
 			path = ""
 			if upload_file(request) != None:
 				file = request.files['image']
-				path = os.path.join('/', app.config['UPLOAD_FOLDER'], secure_filename(file.filename)) 
+				res = cloudinary.uploader.upload(file)
+				path = res['url'] 
 			item = MenuItem(name=request.form['name'], restaurant_id=restaurant_id, \
 				course=request.form['course'], description=request.form['description'], \
 				price=request.form['price'], user_id=login_session['user_id'],\
@@ -517,9 +550,17 @@ def editMenuItem(restaurant_id, menu_id):
 	menu_item = session.query(MenuItem).filter_by(id=menu_id, restaurant_id=restaurant_id).one()
 	if request.method == 'POST':
 		if upload_file(request) != None:
+			oldPic = menu_item.picture
 			file = request.files['image']
-			path = os.path.join('/', app.config['UPLOAD_FOLDER'], secure_filename(file.filename))
+			res = cloudinary.uploader.upload(file)
+			path = res['url']
 			menu_item.picture = path
+
+		dic = oldPic.split('/')
+		imgName = dic[len(dic)-1]
+		pubId = imgName[0:len(imgName)-4]
+		cloudinary.uploader.destroy(pubId, invalidate = True)
+
 		menu_item.name = request.form['name']
 		menu_item.course = request.form['course']
 		menu_item.description = request.form['description']
@@ -555,9 +596,15 @@ def deleteMenuItem(restaurant_id, menu_id):
 
 	restaurant = session.query(Restaurant).get(restaurant_id)
 	menu_item = session.query(MenuItem).filter_by(id=menu_id, restaurant_id=restaurant_id).one()
+	oldPic = menu_item.picture
+
 	if request.method == 'POST':
 		session.query(MenuItem).filter_by(id=menu_id).delete(synchronize_session=False)
 		session.commit()
+		dic = oldPic.split('/')
+		imgName = dic[len(dic)-1]
+		pubId = imgName[0:len(imgName)-4]
+		cloudinary.uploader.destroy(pubId, invalidate = True)
 		flash("Menu Successfully Deleted!")
 		return redirect(url_for('showMenu', restaurant_id=restaurant_id))
 
